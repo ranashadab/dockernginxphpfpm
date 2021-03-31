@@ -1,0 +1,92 @@
+# For more information: https://laravel.com/docs/riback
+version: "3"
+services:
+  riback:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: riback
+    ports:
+      # - "${APP_PORT:-80}:80"
+      - "80:80"
+      - "443:443"
+    # environment:
+      # WWWUSER: "www-data"
+    volumes:
+      - "./back/:/app"
+      - "./ssh:/home/riback/.ssh"
+      # - "./php:/etc/php/"
+    networks:
+      - riback
+    # depends_on:
+      # - redis
+      # - webserver
+
+  #Nginx Service
+  # webserver:
+  #   image: nginx:alpine
+  #   container_name: webserver
+  #   restart: unless-stopped
+  #   tty: true
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./:/var/www
+  #     - ./nginx/conf.d/:/etc/nginx/conf.d/
+  #   networks:
+  #     - riback
+
+  # - mysql
+  mysql:
+    image: "mysql:8.0"
+    ports:
+      - "${FORWARD_DB_PORT:-3306}:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: '${DB_PASSWORD}'
+      MYSQL_DATABASE: '${DB_DATABASE}'
+      MYSQL_USER: '${DB_USERNAME}'
+      MYSQL_PASSWORD: '${DB_PASSWORD}'
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+    volumes:
+      - "riback-mysql:/var/lib/mysql"
+      - "./mysqldumps:/root/mysqldumps"
+    networks:
+      - riback
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping"]
+
+  # redis:
+  #   image: "redis:alpine"
+  #   ports:
+  #     - "${FORWARD_REDIS_PORT:-6379}:6379"
+  #   volumes:
+  #     - "riback-redis:/data"
+  #   networks:
+  #     - riback
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+
+  # myadmin:
+  #   image: 'phpmyadmin:latest'
+  #   ports:
+  #     - 8080:80
+  #   environment:
+  #     MYSQL_ROOT_PASSWORD: '${DB_PASSWORD}'
+  #   links:
+  #     - "mysql:db"
+  #   depends_on:
+  #     - mysql
+  #   networks:
+  #     - riback
+
+networks:
+  riback:
+    driver: bridge
+volumes:
+  riback-redis:
+    driver: local
+  riback-mysql:
+    driver: local
+  mysqldumps:
+    driver: local
